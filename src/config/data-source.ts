@@ -17,6 +17,8 @@ import { TeacherSalary } from "../entities/TeacherSalary";
 import { TimeTable } from "../entities/TimeTable";
 import { Message } from "../entities/Message";
 import { GuardianLink } from "../entities/GuardianLink";
+import { Student } from "../entities/Student";
+import { Teacher } from "../entities/Teacher";
 
 import * as pg from "@neondatabase/serverless";
 dotenv.config();
@@ -40,7 +42,7 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   logging: true,
   entities: [
-    User, Notification, AppSession, ClassRoom, Event, Diary, Lesson, KinderWork, Finance, Stock, Asset, TeacherAttendance, TeacherSalary, TimeTable, Message, GuardianLink
+    User, Notification, AppSession, ClassRoom, Event, Diary, Lesson, KinderWork, Finance, Stock, Asset, TeacherAttendance, TeacherSalary, TimeTable, Message, GuardianLink, Student, Teacher
   ],
   migrations: [],
   subscribers: [],

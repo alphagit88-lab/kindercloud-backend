@@ -9,37 +9,57 @@ const seedDatabase = async () => {
     console.log("Data Source initialized.");
 
     const userRepository = AppDataSource.getRepository(User);
+    const saltRounds = 10;
+    const defaultPassword = await bcrypt.hash("Kinder@123!", saltRounds);
 
-    // Check if an admin already exists
-    const adminExists = await userRepository.findOne({
-      where: { email: "admin@kindercloud.com" },
-    });
-
-    if (adminExists) {
-      console.log("Admin user already exists. Skipping seed.");
-    } else {
-      console.log("Creating default ADMIN user...");
-
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash("Kinder@123!", saltRounds);
-
-      const adminUser = userRepository.create({
+    const usersToSeed = [
+      {
         email: "admin@kindercloud.com",
-        password: hashedPassword,
         firstName: "System",
         lastName: "Admin",
         role: "admin",
-        status: "active",
-        isActive: true,
-        emailVerified: true,
+      },
+      {
+        email: "teacher@kindercloud.com",
+        firstName: "Sarah",
+        lastName: "Jenkins",
+        role: "teacher",
+      },
+      {
+        email: "parent@kindercloud.com",
+        firstName: "Michael",
+        lastName: "Parent",
+        role: "parent",
+      },
+      {
+        email: "kid@kindercloud.com",
+        firstName: "Little",
+        lastName: "Timmy",
+        role: "kid",
+      }
+    ];
+
+    for (const userData of usersToSeed) {
+      const exists = await userRepository.findOne({
+        where: { email: userData.email },
       });
 
-      await userRepository.save(adminUser);
-      console.log("Default ADMIN user created successfully.");
-      console.log("Email: admin@kindercloud.com");
-      console.log("Password: Kinder@123!");
+      if (!exists) {
+        console.log(`Creating ${userData.role} user: ${userData.email}...`);
+        const user = userRepository.create({
+          ...userData,
+          password: defaultPassword,
+          status: "active",
+          isActive: true,
+          emailVerified: true,
+        });
+        await userRepository.save(user);
+      } else {
+        console.log(`${userData.role} user already exists: ${userData.email}`);
+      }
     }
 
+    console.log("Seeding complete. Use pass: Kinder@123! for all demo accounts.");
     process.exit(0);
   } catch (error) {
     console.error("Error during database seeding:", error);
