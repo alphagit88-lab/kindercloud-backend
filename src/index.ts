@@ -28,7 +28,7 @@ app.use(cors({
     const allowed = [
       process.env.FRONTEND_URL,
       "http://localhost:3000",
-      "https://lms-frontend-chi-six.vercel.app"
+      "https://kindercloud-frontend.vercel.app"
     ].filter(Boolean) as string[];
     
     if (!origin || allowed.includes(origin)) {
