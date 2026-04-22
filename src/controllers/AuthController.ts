@@ -75,6 +75,11 @@ export class AuthController {
         { expiresIn: "7d" }
       );
 
+      // Set session for cookie-based auth
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.userEmail = user.email;
+
       res.status(201).json({
         message: "Registration successful",
         user,
@@ -120,6 +125,11 @@ export class AuthController {
         JWT_SECRET,
         { expiresIn: "7d" }
       );
+
+      // Set session for cookie-based auth
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      req.session.userEmail = user.email;
 
       res.json({
         message: "Login successful",
@@ -461,6 +471,11 @@ export class AuthController {
         JWT_SECRET,
         { expiresIn: "7d" }
       );
+
+      // Update session to reflect the switched profile
+      req.session.userId = kidProfile.id;
+      req.session.userRole = kidProfile.role;
+      req.session.userEmail = kidProfile.email;
 
       res.json({
         message: "Switched to Kid profile successfully",
