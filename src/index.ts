@@ -178,6 +178,8 @@ import lessonRoutes from "./routes/lessonRoutes";
 import diaryRoutes from "./routes/diaryRoutes";
 import financeRoutes from "./routes/financeRoutes";
 import inventoryRoutes from "./routes/inventoryRoutes";
+import studentRoutes from "./routes/studentRoutes";
+import teacherRoutes from "./routes/teacherRoutes";
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -187,6 +189,8 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/diaries", diaryRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/teachers", teacherRoutes);
 app.use("/api", userRoutes);
 
 // Global Error Handler
