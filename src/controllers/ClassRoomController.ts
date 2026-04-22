@@ -33,9 +33,14 @@ export class ClassRoomController {
   static async getAllClassRooms(req: Request, res: Response) {
     try {
       const repo = AppDataSource.getRepository(ClassRoom);
-      const classrooms = await repo.find({
-        relations: ["teacher"],
-      });
+      let query: any = { relations: ["teacher"] };
+
+      // If teacher is requesting, only show their own classrooms
+      if (req.session.userRole === 'teacher') {
+        query.where = { teacherId: req.session.userId };
+      }
+
+      const classrooms = await repo.find(query);
       res.json(classrooms);
     } catch (error) {
       console.error("Get classrooms error:", error);
