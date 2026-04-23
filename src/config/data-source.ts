@@ -40,7 +40,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE || "neondb",
   ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
-  synchronize: false,
+  synchronize: true,
   logging: true,
   entities: [
     User, Notification, AppSession, ClassRoom, Event, Diary, Lesson, KinderWork, Finance, Stock, Asset, TeacherAttendance, TeacherSalary, TimeTable, Message, GuardianLink, Student, Teacher
