@@ -13,12 +13,14 @@ export class ParentController {
       const parentId = req.session.userId;
       if (!parentId) return res.status(401).json({ error: "Unauthorized" });
 
+      console.log(`Fetching children for parentId: ${parentId}`);
       const linkRepo = AppDataSource.getRepository(GuardianLink);
       const links = await linkRepo.find({
-        where: { parentId },
+        where: { parentId: parentId as string },
         relations: ["kid"]
       });
 
+      console.log(`Found ${links.length} children links`);
       const children = links.map(link => link.kid);
       res.json(children);
     } catch (error) {
@@ -48,9 +50,6 @@ export class ParentController {
         relations: ["teacher"]
       });
 
-      // Let's refine the query to be more direct if possible
-      // Find the classroom the student belongs to
-      const studentRepo = AppDataSource.getTreeRepository(User); // Assuming student data is elsewhere
       // Actually, we have the Lesson entity with classRoomId. 
       // We should probably find the student's classroom first.
 

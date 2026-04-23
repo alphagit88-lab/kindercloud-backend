@@ -72,4 +72,9 @@ export class User {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
+  @OneToMany("GuardianLink", "parent")
+  guardianLinksAsParent!: any[];
+
+  @OneToMany("GuardianLink", "kid")
+  guardianLinksAsKid!: any[];
 }

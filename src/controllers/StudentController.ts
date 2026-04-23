@@ -13,7 +13,7 @@ export class StudentController {
     try {
       const studentRepo = AppDataSource.getRepository(Student);
       const students = await studentRepo.find({
-        relations: ["user", "classRoom"],
+        relations: ["user", "classRoom", "user.guardianLinksAsKid", "user.guardianLinksAsKid.parent"],
         order: { createdAt: "DESC" }
       });
 
@@ -127,11 +127,13 @@ export class StudentController {
       const { id } = req.params; // userId
       const { 
         firstName, lastName, email, gender, dateOfBirth, 
-        medicalNotes, classRoomId, address, emergencyContact 
+        medicalNotes, classRoomId, address, emergencyContact,
+        guardianInfo 
       } = req.body;
 
       const userRepo = queryRunner.manager.getRepository(User);
       const studentRepo = queryRunner.manager.getRepository(Student);
+      const linkRepo = queryRunner.manager.getRepository(GuardianLink);
 
       const user = await userRepo.findOne({ where: { id: id as string } });
       if (!user) {
@@ -158,8 +160,37 @@ export class StudentController {
       if (emergencyContact) student.emergencyContact = emergencyContact;
       await queryRunner.manager.save(student);
 
+      // Handle Guardian Linking
+      if (guardianInfo && guardianInfo.email) {
+        let guardianUser = await userRepo.findOne({ where: { email: guardianInfo.email } });
+        
+        if (!guardianUser) {
+          const guardianPassword = await bcrypt.hash("Kinder@Guardian!", 10);
+          guardianUser = userRepo.create({
+            firstName: guardianInfo.firstName,
+            lastName: guardianInfo.lastName,
+            email: guardianInfo.email,
+            password: guardianPassword,
+            phone: guardianInfo.phone,
+            role: "parent",
+            status: "active"
+          });
+          guardianUser = await queryRunner.manager.save(guardianUser);
+        }
+
+        // Check if already linked
+        const existingLink = await linkRepo.findOne({ where: { parentId: guardianUser.id, kidId: user.id } });
+        if (!existingLink) {
+          const link = linkRepo.create({
+            parentId: guardianUser.id,
+            kidId: user.id
+          });
+          await queryRunner.manager.save(link);
+        }
+      }
+
       await queryRunner.commitTransaction();
-      res.json({ message: "Student updated successfully" });
+      res.json({ message: "Student and Guardian links updated successfully" });
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
       console.error("Error updating student:", error);
