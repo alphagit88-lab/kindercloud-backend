@@ -11,7 +11,7 @@ export class KinderWorkController {
 
       const workRepo = AppDataSource.getRepository(KinderWork);
       const works = await workRepo.find({
-        where: { kidId },
+        where: { kidId: kidId as string },
         order: { createdAt: "DESC" }
       });
 
@@ -30,7 +30,7 @@ export class KinderWorkController {
 
       const workRepo = AppDataSource.getRepository(KinderWork);
       const works = await workRepo.find({
-        where: { kidId, fileType: type },
+        where: { kidId: kidId as string, fileType: type as string },
         order: { createdAt: "DESC" }
       });
 
