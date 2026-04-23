@@ -12,8 +12,8 @@ router.delete("/:id", authenticate, authorize("admin"), TeacherController.delete
 
 // Operations
 router.post("/attendance", authenticate, authorize("admin"), TeacherOperationsController.markAttendance);
-router.get("/attendance/:teacherId", authenticate, authorize("admin"), TeacherOperationsController.getAttendance);
+router.get("/attendance/:teacherId", authenticate, authorize("admin", "teacher"), TeacherOperationsController.getAttendance);
 router.post("/salary", authenticate, authorize("admin"), TeacherOperationsController.processSalary);
-router.get("/salary/:teacherId", authenticate, authorize("admin"), TeacherOperationsController.getSalaryHistory);
+router.get("/salary/:teacherId", authenticate, authorize("admin", "teacher"), TeacherOperationsController.getSalaryHistory);
 
 export default router;
