@@ -15,7 +15,12 @@ export class TeacherOperationsController {
 
       // If no teacherId provided, assume self-marking (teacher role)
       if (!teacherId && req.session.userRole === 'teacher') {
-        teacherId = req.session.userId;
+        const teacherRepo = AppDataSource.getRepository(Teacher);
+        const teacher = await teacherRepo.findOne({ where: { userId: req.session.userId } });
+        if (!teacher) {
+            return res.status(404).json({ error: "Teacher profile not found" });
+        }
+        teacherId = teacher.id;
       }
 
       if (!teacherId || !status) {
@@ -58,7 +63,14 @@ export class TeacherOperationsController {
 
   static async checkOut(req: Request, res: Response) {
     try {
-        const teacherId = req.session.userId;
+        const teacherRepo = AppDataSource.getRepository(Teacher);
+        const teacher = await teacherRepo.findOne({ where: { userId: req.session.userId } });
+        
+        if (!teacher) {
+            return res.status(404).json({ error: "Teacher profile not found" });
+        }
+
+        const teacherId = teacher.id;
         const today = new Date().toISOString().split('T')[0];
         const now = new Date();
 
@@ -82,8 +94,16 @@ export class TeacherOperationsController {
 
   static async getAttendance(req: Request, res: Response) {
     try {
-      const { teacherId } = req.params;
+      let { teacherId } = req.params;
       const repo = AppDataSource.getRepository(TeacherAttendance);
+      const teacherRepo = AppDataSource.getRepository(Teacher);
+
+      // Check if this is a User ID by mistake (from teacher portal)
+      const teacherByUserId = await teacherRepo.findOne({ where: { userId: teacherId } });
+      if (teacherByUserId) {
+        teacherId = teacherByUserId.id;
+      }
+
       const records = await repo.find({
         where: { teacherId: teacherId as string },
         order: { date: "DESC" },

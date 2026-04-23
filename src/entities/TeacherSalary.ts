@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn
 } from "typeorm";
-import { User } from "./User";
+import { Teacher } from "./Teacher";
 
 @Entity("teacher_salaries")
 export class TeacherSalary {
@@ -17,9 +17,9 @@ export class TeacherSalary {
   @Column({ name: "teacher_id", type: "uuid" })
   teacherId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => Teacher)
   @JoinColumn({ name: "teacher_id" })
-  teacher!: User;
+  teacher!: Teacher;
 
   @Column({ length: 50 })
   month!: string;
