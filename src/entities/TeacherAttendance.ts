@@ -32,6 +32,9 @@ export class TeacherAttendance {
   })
   status!: string;
 
+  @Column({ type: "text", nullable: true })
+  note?: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

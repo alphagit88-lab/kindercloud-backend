@@ -38,6 +38,12 @@ export class TimeTable {
   @Column({ type: "time" })
   endTime!: string;
 
+  @Column({ type: "varchar", length: 100 })
+  activity!: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  location?: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
