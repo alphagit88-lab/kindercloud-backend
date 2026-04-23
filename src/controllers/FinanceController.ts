@@ -73,9 +73,12 @@ export class FinanceController {
         },
         transactions
       });
-    } catch (error) {
-      console.error("Get transactions error:", error);
-      res.status(500).json({ error: "Failed to fetch financial transactions" });
+    } catch (error: any) {
+      console.error("Get transactions error details:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch financial transactions", 
+        details: error.message 
+      });
     }
   }
 }

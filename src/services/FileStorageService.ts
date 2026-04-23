@@ -1,9 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+import { put, del } from '@vercel/blob';
 import { randomUUID } from "crypto";
 
 // Multer file type
-interface MulterFile {
+export interface MulterFile {
   fieldname: string;
   originalname: string;
   encoding: string;
@@ -22,13 +23,21 @@ const isVercel = !!process.env.VERCEL;
  */
 export class FileStorageService {
   private uploadDir: string;
+  private static instance: FileStorageService;
 
-  constructor() {
+  private constructor() {
     // Use /tmp on Vercel (read-only filesystem), otherwise use 'uploads'
     this.uploadDir = isVercel
       ? "/tmp/uploads"
       : (process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
     this.ensureUploadDirectories();
+  }
+
+  public static getInstance(): FileStorageService {
+    if (!FileStorageService.instance) {
+        FileStorageService.instance = new FileStorageService();
+    }
+    return FileStorageService.instance;
   }
 
   /**
@@ -87,7 +96,6 @@ export class FileStorageService {
     // If Vercel Blob is configured
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_READ_WRITE_TOKEN;
     if (blobToken) {
-      const { put } = require('@vercel/blob');
       // Normalize directory names for Blob (no leading slash, consistent structure)
       const blobPath = `uploads/${contentTypeDir}/${teacherId}/${fileName}`.replace(/\/+/g, '/');
       
@@ -140,8 +148,7 @@ export class FileStorageService {
   async deleteFile(fileUrl: string): Promise<void> {
     try {
       const blobToken = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_READ_WRITE_TOKEN;
-      if (blobToken && fileUrl.includes('public.blob.vercel-storage.com')) {
-        const { del } = require('@vercel/blob');
+      if (blobToken && (fileUrl.includes('public.blob.vercel-storage.com') || fileUrl.startsWith('https://'))) {
         await del(fileUrl, { token: blobToken });
         return;
       }
