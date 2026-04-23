@@ -101,19 +101,24 @@ export class FileStorageService {
       
       console.log(`[FileStorageService] Uploading to Vercel Blob: ${blobPath}`);
       
-      const { url } = await put(blobPath, file.buffer, {
-        access: 'public',
-        token: blobToken,
-        contentType: file.mimetype,
-      });
-      
-      console.log(`[FileStorageService] Upload successful: ${url}`);
-      
-      return {
-        fileUrl: url,
-        fileSize: file.size,
-        fileName,
-      };
+      try {
+        const { url } = await put(blobPath, file.buffer, {
+          access: 'public',
+          token: blobToken,
+          contentType: file.mimetype,
+        });
+        
+        console.log(`[FileStorageService] Upload successful: ${url}`);
+        
+        return {
+          fileUrl: url,
+          fileSize: file.size,
+          fileName,
+        };
+      } catch (blobError) {
+        console.error(`[FileStorageService] Vercel Blob upload FAILED:`, blobError);
+        throw blobError;
+      }
     }
 
 

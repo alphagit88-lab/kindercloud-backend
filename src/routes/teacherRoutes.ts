@@ -11,6 +11,7 @@ router.post("/", authenticate, authorize("admin"), TeacherController.create);
 router.delete("/:id", authenticate, authorize("admin"), TeacherController.delete);
 
 // Operations (Admin)
+router.get("/attendance/all", authenticate, authorize("admin"), TeacherOperationsController.getAllAttendance);
 router.post("/attendance", authenticate, authorize("admin"), TeacherOperationsController.markAttendance);
 router.post("/salary", authenticate, authorize("admin"), TeacherOperationsController.processSalary);
 

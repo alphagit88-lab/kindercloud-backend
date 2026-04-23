@@ -84,11 +84,33 @@ export class TeacherOperationsController {
         }
 
         attendance.checkOutTime = now;
+        
+        // Calculate duration in minutes
+        if (attendance.checkInTime) {
+            const diffMs = now.getTime() - new Date(attendance.checkInTime).getTime();
+            attendance.duration = Math.round(diffMs / (1000 * 60));
+        }
+
         await repo.save(attendance);
         res.json({ message: "Checked out successfully", attendance });
     } catch (error) {
         console.error("Check out error:", error);
         res.status(500).json({ error: "Failed to check out" });
+    }
+  }
+
+  static async getAllAttendance(req: Request, res: Response) {
+    try {
+      const repo = AppDataSource.getRepository(TeacherAttendance);
+      const records = await repo.find({
+        relations: ["teacher", "teacher.user"],
+        order: { date: "DESC", createdAt: "DESC" },
+        take: 100
+      });
+      res.json(records);
+    } catch (error) {
+      console.error("Get all attendance error:", error);
+      res.status(500).json({ error: "Failed to fetch all attendance records" });
     }
   }
 

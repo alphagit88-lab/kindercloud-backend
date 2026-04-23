@@ -191,9 +191,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Global error:", err);
   if (err instanceof Error) {
     if (err.message.includes("Invalid file type")) return res.status(400).json({ error: err.message });
-    if (err.message.includes("File too large")) return res.status(413).json({ error: "File too large. Max size is 100MB." });
+    if (err.message.includes("File too large")) return res.status(413).json({ error: "File too large. Max size is 500MB." });
   }
-  if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "File too large. Max size is 100MB." });
+  if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "File too large. Max size is 500MB." });
   res.status(500).json({ 
     error: "Internal Server Error", 
     message: err.message || "An unexpected error occurred"
