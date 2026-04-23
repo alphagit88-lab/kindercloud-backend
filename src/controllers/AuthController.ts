@@ -80,10 +80,16 @@ export class AuthController {
       req.session.userRole = user.role;
       req.session.userEmail = user.email;
 
-      res.status(201).json({
-        message: "Registration successful",
-        user,
-        token
+      // Force session save before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error during registration:", err);
+        }
+        res.status(201).json({
+          message: "Registration successful",
+          user,
+          token
+        });
       });
     } catch (error: any) {
       if (error.message === "User with this email already exists") {
@@ -131,10 +137,16 @@ export class AuthController {
       req.session.userRole = user.role;
       req.session.userEmail = user.email;
 
-      res.json({
-        message: "Login successful",
-        user,
-        token
+      // Force session save before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error during login:", err);
+        }
+        res.json({
+          message: "Login successful",
+          user,
+          token
+        });
       });
     } catch (error: any) {
       if (
@@ -477,12 +489,17 @@ export class AuthController {
       req.session.userRole = kidProfile.role;
       req.session.userEmail = kidProfile.email;
 
-      res.json({
-        message: "Switched to Kid profile successfully",
-        user: kidProfile,
-        token
+      // Force session save before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error during profile switch:", err);
+        }
+        res.json({
+          message: "Switched to Kid profile successfully",
+          user: kidProfile,
+          token
+        });
       });
-
     } catch (error: any) {
       console.error("Switch profile error:", error);
       res.status(403).json({ error: error.message || "Failed to switch profile" });

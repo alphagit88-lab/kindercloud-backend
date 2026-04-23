@@ -3,7 +3,6 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
-import cookieParser from "cookie-parser";
 import { AppDataSource } from "./config/data-source";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -42,7 +41,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cookie"]
 }));
 
-app.use(cookieParser());
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
@@ -58,8 +56,6 @@ app.use(async (req: Request, res: Response, next) => {
 
   if (!AppDataSource.isInitialized) {
     if (isInitializing) {
-        // Wait and poll or just wait a bit (simplest is to just wait and let retry happen)
-        // But better is to just wait for the other one to finish
         while (isInitializing) {
             await new Promise(resolve => setTimeout(resolve, 500));
             if (AppDataSource.isInitialized) break;
@@ -85,30 +81,22 @@ app.use(async (req: Request, res: Response, next) => {
     }
   }
 
-  // One-time migration: ensure `destroyedAt` column exists on app_sessions
-  // One-time migration: ensure `destroyedAt` column exists on app_sessions
-  // (Required by connect-typeorm v2 for soft-delete; without it, logout fails
-  //  silently and subsequent logins crash with duplicate key errors.)
   if (!dbMigrated && AppDataSource.isInitialized) {
-    dbMigrated = true; // set early to prevent concurrent migrations
+    dbMigrated = true;
     try {
       const cols = await AppDataSource.query(
         `SELECT column_name FROM information_schema.columns WHERE table_name = 'app_sessions' AND column_name = 'destroyedAt'`
       );
       if (cols.length === 0) {
         await AppDataSource.query(`ALTER TABLE "app_sessions" ADD COLUMN "destroyedAt" TIMESTAMP`);
-        // Purge all existing sessions since they lack the destroyedAt column
-        await AppDataSource.query(`DELETE FROM "app_sessions"`);
-        console.log("✓ Added missing destroyedAt column to app_sessions and purged stale sessions");
       }
-    } catch (migErr) {
-      console.warn("Session migration check failed (non-fatal):", migErr);
+    } catch (e) {
+      console.warn("Session table migration skipped or failed:", e);
     }
   }
 
   next();
 });
-
 
 import { getSessionStore } from "./config/session-store";
 
@@ -119,13 +107,14 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "your-secret-key-change-this",
   resave: false,
   saveUninitialized: false,
-  proxy: true,
+  proxy: isProd,
   store: getSessionStore(),
   cookie: {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
     maxAge: parseInt(process.env.SESSION_MAX_AGE || "86400000"),
+    path: '/',
   },
 });
 
@@ -133,32 +122,28 @@ app.use((req: Request, res: Response, next) => {
   if (req.method === "OPTIONS") {
     return next();
   }
-  return sessionMiddleware(req, res, next);
+  return sessionMiddleware(req, res, (err) => {
+    if (err) {
+      console.error("[Session Error]", err);
+    } else {
+      console.log(`[Session] Path: ${req.path}, ID: ${req.sessionID}, UserID: ${req.session?.userId || 'None'}`);
+    }
+    next(err);
+  });
 });
 
-// Request ID middleware (should be early in the chain)
 app.use(requestIdMiddleware);
-
-// Input sanitization (before other middleware)
 app.use(sanitizeInput);
-
-// Session expiration handling
 app.use(handleSessionExpiration);
-
-// Rate limiting for all API routes
 app.use("/api", apiRateLimiter);
 
-// Serve static files (uploads)
 const isVercel = !!process.env.VERCEL;
 const uploadDir = isVercel 
   ? "/tmp/uploads" 
   : (process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
 app.use("/uploads", express.static(uploadDir));
-
-// Data sanitization middleware (removes passwords from responses)
 app.use(sanitizeUserData);
 
-// Routes
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "LMS Backend API is running" });
 });
@@ -180,70 +165,47 @@ import financeRoutes from "./routes/financeRoutes";
 import inventoryRoutes from "./routes/inventoryRoutes";
 import studentRoutes from "./routes/studentRoutes";
 import teacherRoutes from "./routes/teacherRoutes";
+import eventRoutes from "./routes/eventRoutes";
+import timeTableRoutes from "./routes/timeTableRoutes";
 
-// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/classrooms", classRoomRoutes);
 app.use("/api/lessons", lessonRoutes);
+app.use("/api/timetable", timeTableRoutes);
 app.use("/api/diaries", diaryRoutes);
+app.use("/api/events", eventRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api", userRoutes);
 
-// Global Error Handler
-// Middleware with 4 arguments is treated as error handler by Express
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Global error:", err);
-  
   if (err instanceof Error) {
-    if (err.message.includes("Invalid file type")) {
-      return res.status(400).json({ error: err.message });
-    }
-    if (err.message.includes("File too large")) {
-      return res.status(413).json({ error: "File too large. Max size is 100MB." });
-    }
+    if (err.message.includes("Invalid file type")) return res.status(400).json({ error: err.message });
+    if (err.message.includes("File too large")) return res.status(413).json({ error: "File too large. Max size is 100MB." });
   }
-
-  // Multer errors often have a code property
-  if (err.code === "LIMIT_FILE_SIZE") {
-     return res.status(413).json({ error: "File too large. Max size is 100MB." });
-  }
-
+  if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "File too large. Max size is 100MB." });
   res.status(500).json({ 
     error: "Internal Server Error", 
     message: err.message || "An unexpected error occurred"
   });
 });
 
-// Start server + background jobs only outside Vercel serverless
-// Start server immediately; database will be initialized as a separate task
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`✓ Server is running on port ${PORT}`);
     console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
-
-    // Trigger database initialization without blocking the event loop
-    console.log("... Starting background database connection ...");
     AppDataSource.initialize()
       .then(() => {
-        console.log("✓ Background database connection successful");
-        
-        // Only start background jobs after database is ready
-        console.log("âœ“ Database ready");
+        console.log("✓ Database ready");
       })
       .catch((error) => {
         console.error("✗ Background database connection failed:", error);
-        // We don't exit here because the server is still serving requests (which might also fail, but better than a dead process)
       });
   });
 }
 
-
-
 export default app;
-
-

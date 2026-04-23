@@ -22,7 +22,10 @@ export class TeacherSalary {
   teacher!: User;
 
   @Column({ length: 50 })
-  month!: string; // e.g. '2026-04'
+  month!: string;
+
+  @Column({ type: "int" })
+  year!: number;
 
   @Column({ type: "decimal", precision: 10, scale: 2 })
   amount!: number;
@@ -34,6 +37,14 @@ export class TeacherSalary {
     default: "pending"
   })
   status!: string;
+
+  @Column({
+    type: "varchar",
+    length: 50,
+    name: "payment_method",
+    default: "bank_transfer"
+  })
+  paymentMethod!: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
