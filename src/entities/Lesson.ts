@@ -50,6 +50,12 @@ export class Lesson {
   @Column({ type: "text", nullable: true })
   assessment?: string;
 
+  @Column({ name: "attachment_url", type: "text", nullable: true })
+  attachmentUrl?: string;
+
+  @Column({ name: "attachment_type", type: "varchar", length: 50, nullable: true })
+  attachmentType?: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

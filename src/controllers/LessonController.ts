@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import { Lesson } from "../entities/Lesson";
+import { FileStorageService } from "../services/FileStorageService";
 
 export class LessonController {
   /**
@@ -8,8 +9,9 @@ export class LessonController {
    */
   static async logLesson(req: Request, res: Response) {
     try {
-      const { classRoomId, subject, lessonDate, plan, activity, progress, homework, assessment } = req.body;
+      const { classRoomId, subject, lessonDate, plan, activity, progress, homework, assessment, attachmentType } = req.body;
       const teacherId = req.session.userId;
+      const file = req.file;
 
       if (!classRoomId || !subject || !lessonDate) {
         return res.status(400).json({ error: "classRoomId, subject, and lessonDate are required" });
@@ -17,6 +19,17 @@ export class LessonController {
 
       if (!teacherId) {
         return res.status(401).json({ error: "Unauthorized. Missing teacher identity." });
+      }
+
+      let attachmentUrl = undefined;
+      if (file) {
+          const storage = FileStorageService.getInstance();
+          const uploadResult = await storage.saveFile(
+              file as any,
+              attachmentType || "document",
+              teacherId
+          );
+          attachmentUrl = uploadResult.fileUrl;
       }
 
       const repo = AppDataSource.getRepository(Lesson);
@@ -29,14 +42,16 @@ export class LessonController {
         activity,
         progress,
         homework,
-        assessment
+        assessment,
+        attachmentUrl,
+        attachmentType: attachmentType || (file ? "document" : undefined)
       });
 
       await repo.save(lesson);
       res.status(201).json({ message: "Lesson logged successfully", lesson });
     } catch (error) {
-      console.error("Log lesson error:", error);
-      res.status(500).json({ error: "Failed to log lesson" });
+      console.error("LOG LESSON ERROR FULL:", error);
+      res.status(500).json({ error: "Failed to log lesson. " + (error instanceof Error ? error.message : "Internal Server Error") });
     }
   }
 

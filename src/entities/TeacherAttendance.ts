@@ -38,6 +38,9 @@ export class TeacherAttendance {
   @Column({ name: "check_out_time", type: "timestamp", nullable: true })
   checkOutTime?: Date;
 
+  @Column({ type: "integer", nullable: true })
+  duration?: number; // Duration in minutes
+
   @Column({ type: "text", nullable: true })
   note?: string;
 
