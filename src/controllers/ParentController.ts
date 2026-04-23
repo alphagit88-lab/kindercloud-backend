@@ -35,14 +35,14 @@ export class ParentController {
 
       // Verify parent is linked to this kid
       const linkRepo = AppDataSource.getRepository(GuardianLink);
-      const link = await linkRepo.findOne({ where: { parentId, kidId } });
+      const link = await linkRepo.findOne({ where: { parentId, kidId: kidId as string } });
       if (!link && req.session.userRole !== 'admin') {
         return res.status(403).json({ error: "Access denied. Not your child." });
       }
 
       const lessonRepo = AppDataSource.getRepository(Lesson);
       const lessons = await lessonRepo.find({
-        where: { teacher: { students: { userId: kidId } } as any }, // This is a bit complex due to relations
+        where: { teacher: { students: { userId: kidId as string } } as any }, // This is a bit complex due to relations
         // Simpler way: filter by classroom of the student
         order: { lessonDate: "DESC" },
         relations: ["teacher"]
@@ -69,14 +69,14 @@ export class ParentController {
         if (!parentId) return res.status(401).json({ error: "Unauthorized" });
 
         const linkRepo = AppDataSource.getRepository(GuardianLink);
-        const link = await linkRepo.findOne({ where: { parentId, kidId } });
+        const link = await linkRepo.findOne({ where: { parentId, kidId: kidId as string } });
         if (!link && req.session.userRole !== 'admin') {
             return res.status(403).json({ error: "Access denied. Not your child." });
         }
 
         // Get student's classroom
         const studentRepo = AppDataSource.getRepository(require("../entities/Student").Student);
-        const student = await studentRepo.findOne({ where: { userId: kidId } });
+        const student = await studentRepo.findOne({ where: { userId: kidId as string } });
         
         if (!student || !student.classRoomId) {
             return res.json([]); // No classroom assigned yet
