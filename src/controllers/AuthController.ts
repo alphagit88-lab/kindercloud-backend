@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken";
 import { FileStorageService } from "../services/FileStorageService";
 
 const authService = new AuthService();
-const fileStorageService = new FileStorageService();
+const fileStorageService = FileStorageService.getInstance();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 export class AuthController {

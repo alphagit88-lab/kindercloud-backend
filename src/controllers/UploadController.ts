@@ -17,7 +17,7 @@ export class UploadController {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if (userRole !== "instructor" && userRole !== "admin") {
+      if (userRole !== "instructor" && userRole !== "admin" && userRole !== "teacher") {
         console.warn(`[Upload] Forbidden blob upload attempt for user ${userId} with role ${userRole}`);
         return res.status(403).json({ error: "Forbidden" });
       }
