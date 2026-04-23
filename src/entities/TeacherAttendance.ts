@@ -27,10 +27,16 @@ export class TeacherAttendance {
   @Column({
     type: "varchar",
     length: 50,
-    enum: ["present", "absent", "late", "leave"],
+    enum: ["present", "absent", "late", "leave", "half-day"],
     default: "present"
   })
   status!: string;
+
+  @Column({ name: "check_in_time", type: "timestamp", nullable: true })
+  checkInTime?: Date;
+
+  @Column({ name: "check_out_time", type: "timestamp", nullable: true })
+  checkOutTime?: Date;
 
   @Column({ type: "text", nullable: true })
   note?: string;
