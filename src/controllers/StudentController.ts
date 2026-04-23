@@ -116,6 +116,60 @@ export class StudentController {
   }
 
   /**
+   * Update student
+   */
+  static async update(req: Request, res: Response) {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const { id } = req.params; // userId
+      const { 
+        firstName, lastName, email, gender, dateOfBirth, 
+        medicalNotes, classRoomId, address, emergencyContact 
+      } = req.body;
+
+      const userRepo = queryRunner.manager.getRepository(User);
+      const studentRepo = queryRunner.manager.getRepository(Student);
+
+      const user = await userRepo.findOne({ where: { id: id as string } });
+      if (!user) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      const student = await studentRepo.findOne({ where: { userId: id as string } });
+      if (!student) {
+        return res.status(404).json({ error: "Student profile not found" });
+      }
+
+      // Update User
+      if (firstName) user.firstName = firstName;
+      if (lastName) user.lastName = lastName;
+      if (email) user.email = email;
+      await queryRunner.manager.save(user);
+
+      // Update Student Profile
+      if (gender) student.gender = gender;
+      if (dateOfBirth) student.dateOfBirth = dateOfBirth;
+      if (medicalNotes !== undefined) student.medicalNotes = medicalNotes;
+      if (classRoomId !== undefined) student.classRoomId = classRoomId;
+      if (address) student.address = address;
+      if (emergencyContact) student.emergencyContact = emergencyContact;
+      await queryRunner.manager.save(student);
+
+      await queryRunner.commitTransaction();
+      res.json({ message: "Student updated successfully" });
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      console.error("Error updating student:", error);
+      res.status(500).json({ error: "Failed to update student", details: error.message });
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
    * Delete student
    */
   static async delete(req: Request, res: Response) {
