@@ -169,6 +169,7 @@ import eventRoutes from "./routes/eventRoutes";
 import timeTableRoutes from "./routes/timeTableRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import parentRoutes from "./routes/parentRoutes";
+import kidRoutes from "./routes/kidRoutes";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -183,6 +184,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/parents", parentRoutes);
+app.use("/api/kids", kidRoutes);
 app.use("/api", userRoutes);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
