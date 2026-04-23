@@ -99,7 +99,7 @@ export class TeacherOperationsController {
       const teacherRepo = AppDataSource.getRepository(Teacher);
 
       // Check if this is a User ID by mistake (from teacher portal)
-      const teacherByUserId = await teacherRepo.findOne({ where: { userId: teacherId } });
+      const teacherByUserId = await teacherRepo.findOne({ where: { userId: teacherId as string } });
       if (teacherByUserId) {
         teacherId = teacherByUserId.id;
       }
