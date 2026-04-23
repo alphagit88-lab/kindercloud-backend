@@ -27,6 +27,9 @@ export class Finance {
   @Column({ name: "transaction_date", type: "date" })
   transactionDate!: Date;
 
+  @Column({ name: "student_id", type: "uuid", nullable: true })
+  studentId?: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
