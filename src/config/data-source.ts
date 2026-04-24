@@ -34,14 +34,20 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   driver: pg,
   url: process.env.DATABASE_URL,
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "5432"),
-  username: process.env.DB_USERNAME || "postgres",
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE || "neondb",
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+  // Fallback to individual vars only if url is missing
+  ...(!process.env.DATABASE_URL && {
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "5432"),
+    username: process.env.DB_USERNAME || "postgres",
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE || "neondb",
+  }),
+  // Always enable SSL if in production or connecting to Neon
+  ssl: process.env.DB_SSL === "true" || (process.env.DATABASE_URL && process.env.DATABASE_URL.includes("neon")) 
+    ? { rejectUnauthorized: false } 
+    : false,
   synchronize: true,
-  logging: true,
+  logging: process.env.NODE_ENV !== "production",
   entities: [
     User, Notification, AppSession, ClassRoom, Event, Diary, Lesson, KinderWork, Finance, Stock, Asset, TeacherAttendance, TeacherSalary, TimeTable, Message, GuardianLink, Student, Teacher
   ],
