@@ -238,9 +238,9 @@ export const sanitizeUserData = (
   
   res.json = function (data: any): Response {
     // Recursively remove password fields
-    const sanitize = (obj: any): any => {
+    const sanitize = (obj: any, visited = new WeakSet()): any => {
       if (Array.isArray(obj)) {
-        return obj.map(sanitize);
+        return obj.map(item => sanitize(item, visited));
       }
 
       // Preserve Date objects — spreading them produces an empty plain object {}
@@ -249,6 +249,10 @@ export const sanitizeUserData = (
       }
       
       if (obj && typeof obj === "object") {
+        // Prevent infinite recursion for circular references
+        if (visited.has(obj)) return '[Circular]';
+        visited.add(obj);
+
         const sanitized = { ...obj };
         
         // Remove sensitive fields
@@ -257,7 +261,7 @@ export const sanitizeUserData = (
         // Recursively sanitize nested objects
         Object.keys(sanitized).forEach(key => {
           if (sanitized[key] && typeof sanitized[key] === "object") {
-            sanitized[key] = sanitize(sanitized[key]);
+            sanitized[key] = sanitize(sanitized[key], visited);
           }
         });
         

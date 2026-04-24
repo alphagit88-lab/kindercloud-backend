@@ -18,14 +18,14 @@ export class TimeTable {
   @Column({ name: "classroom_id", type: "uuid" })
   classRoomId!: string;
 
-  @ManyToOne(() => ClassRoom)
+  @ManyToOne(() => ClassRoom, { onDelete: "CASCADE" })
   @JoinColumn({ name: "classroom_id" })
   classRoom!: ClassRoom;
 
   @Column({ name: "teacher_id", type: "uuid" })
   teacherId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "teacher_id" })
   teacher!: User;
 

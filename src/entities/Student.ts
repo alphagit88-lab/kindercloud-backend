@@ -6,7 +6,9 @@ import {
   UpdateDateColumn,
   OneToOne,
   JoinColumn,
-  ManyToOne
+  ManyToOne,
+  ManyToMany,
+  JoinTable
 } from "typeorm";
 import { User } from "./User";
 import { ClassRoom } from "./ClassRoom";
@@ -32,12 +34,9 @@ export class Student {
   @Column({ name: "admission_date", type: "date", default: () => "CURRENT_DATE" })
   admissionDate!: string;
 
-  @Column({ name: "class_room_id", type: "uuid", nullable: true })
-  classRoomId?: string;
-
-  @ManyToOne(() => ClassRoom)
-  @JoinColumn({ name: "class_room_id" })
-  classRoom?: ClassRoom;
+  @ManyToMany(() => ClassRoom, classroom => classroom.students)
+  @JoinTable({ name: "student_classrooms" })
+  classRooms?: ClassRoom[];
 
   @Column({ type: "text", nullable: true })
   medicalNotes?: string;

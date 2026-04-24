@@ -75,6 +75,55 @@ export class TeacherController {
     }
   }
 
+  static async update(req: Request, res: Response) {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const { id } = req.params;
+      const { 
+        firstName, lastName, email, phone,
+        qualification, specialization, baseSalary 
+      } = req.body;
+
+      const userRepo = queryRunner.manager.getRepository(User);
+      const user = await userRepo.findOne({ where: { id: id as string } });
+      
+      if (!user) {
+        return res.status(404).json({ error: "Teacher not found" });
+      }
+
+      // Update User fields
+      if (firstName) user.firstName = firstName;
+      if (lastName) user.lastName = lastName;
+      if (email) user.email = email;
+      if (phone !== undefined) user.phone = phone;
+      await queryRunner.manager.save(user);
+
+      // Update Teacher fields
+      const teacherRepo = queryRunner.manager.getRepository(Teacher);
+      const teacher = await teacherRepo.findOne({ where: { userId: user.id } });
+      
+      if (teacher) {
+        if (qualification !== undefined) teacher.qualification = qualification;
+        if (specialization !== undefined) teacher.specialization = specialization;
+        if (baseSalary !== undefined) teacher.baseSalary = baseSalary;
+        await queryRunner.manager.save(teacher);
+      }
+
+      await queryRunner.commitTransaction();
+      res.json({ message: "Teacher updated successfully" });
+
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      console.error("Error updating teacher:", error);
+      res.status(500).json({ error: "Failed to update teacher", details: error.message });
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   static async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;

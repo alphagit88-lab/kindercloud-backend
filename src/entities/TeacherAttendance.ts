@@ -17,7 +17,7 @@ export class TeacherAttendance {
   @Column({ name: "teacher_id", type: "uuid" })
   teacherId!: string;
 
-  @ManyToOne(() => Teacher)
+  @ManyToOne(() => Teacher, { onDelete: "CASCADE" })
   @JoinColumn({ name: "teacher_id" })
   teacher!: Teacher;
 

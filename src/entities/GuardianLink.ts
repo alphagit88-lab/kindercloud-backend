@@ -17,14 +17,14 @@ export class GuardianLink {
   @Column({ name: "parent_id", type: "uuid" })
   parentId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "parent_id" })
   parent!: User;
 
   @Column({ name: "kid_id", type: "uuid" })
   kidId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "kid_id" })
   kid!: User;
 

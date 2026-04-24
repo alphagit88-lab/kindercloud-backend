@@ -8,6 +8,7 @@ import { TeacherOperationsController } from "../controllers/TeacherOperationsCon
 
 router.get("/", authenticate, authorize("admin"), TeacherController.getAll);
 router.post("/", authenticate, authorize("admin"), TeacherController.create);
+router.put("/:id", authenticate, authorize("admin"), TeacherController.update);
 router.delete("/:id", authenticate, authorize("admin"), TeacherController.delete);
 
 // Operations (Admin)

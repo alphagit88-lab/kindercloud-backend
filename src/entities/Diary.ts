@@ -17,7 +17,7 @@ export class Diary {
   @Column({ name: "teacher_id", type: "uuid" })
   teacherId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "teacher_id" })
   teacher!: User;
 
