@@ -6,9 +6,11 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToMany
+  OneToMany,
+  ManyToMany
 } from "typeorm";
 import { User } from "./User";
+import { Student } from "./Student";
 
 @Entity("class_rooms")
 export class ClassRoom {
@@ -21,7 +23,7 @@ export class ClassRoom {
   @Column({ name: "teacher_id", type: "uuid", nullable: true })
   teacherId?: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "SET NULL" })
   @JoinColumn({ name: "teacher_id" })
   teacher!: User;
 
@@ -30,4 +32,7 @@ export class ClassRoom {
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
+
+  @ManyToMany(() => Student, student => student.classRooms)
+  students!: Student[];
 }

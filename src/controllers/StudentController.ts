@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
+import { In } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import { Student } from "../entities/Student";
 import { GuardianLink } from "../entities/GuardianLink";
+import { ClassRoom } from "../entities/ClassRoom";
 import bcrypt from "bcryptjs";
 
 export class StudentController {
@@ -10,17 +12,30 @@ export class StudentController {
    * Get all students
    */
   static async getAll(req: Request, res: Response) {
+    console.log("[StudentController] getAll request received");
     try {
       const studentRepo = AppDataSource.getRepository(Student);
-      const students = await studentRepo.find({
-        relations: ["user", "classRoom", "user.guardianLinksAsKid", "user.guardianLinksAsKid.parent"],
-        order: { createdAt: "DESC" }
-      });
+      console.log("[StudentController] studentRepo obtained");
+      let students;
+      try {
+        students = await studentRepo.find({
+          relations: ["user", "classRooms"],
+          order: { createdAt: "DESC" }
+        });
+      } catch (findError: any) {
+        console.error("[StudentController] find() failed:", findError);
+        throw new Error(`Database query failed: ${findError.message}`);
+      }
 
+      console.log(`[StudentController] Fetched ${students.length} students`);
       res.json(students);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      res.status(500).json({ error: "Failed to fetch students" });
+    } catch (error: any) {
+      console.error("[StudentController] Error fetching students:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch students", 
+        details: error.message,
+        errorObject: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      });
     }
   }
 
@@ -35,7 +50,7 @@ export class StudentController {
     try {
       const { 
         firstName, lastName, email, password, gender, dateOfBirth, 
-        medicalNotes, classRoomId, address, emergencyContact,
+        medicalNotes, classroomIds, address, emergencyContact,
         guardianInfo // { firstName, lastName, email, phone, relationship }
       } = req.body;
 
@@ -64,12 +79,21 @@ export class StudentController {
 
       // 2. Create Student Profile
       const studentRepo = queryRunner.manager.getRepository(Student);
+      const classRoomRepo = queryRunner.manager.getRepository(ClassRoom);
+      
+      let classRooms: ClassRoom[] = [];
+      if (classroomIds && Array.isArray(classroomIds)) {
+        classRooms = await classRoomRepo.find({
+          where: { id: In(classroomIds) }
+        });
+      }
+
       const studentProfile = studentRepo.create({
         userId: savedStudentUser.id,
         gender,
         dateOfBirth,
         medicalNotes,
-        classRoomId,
+        classRooms,
         address,
         emergencyContact
       });
@@ -127,7 +151,7 @@ export class StudentController {
       const { id } = req.params; // userId
       const { 
         firstName, lastName, email, gender, dateOfBirth, 
-        medicalNotes, classRoomId, address, emergencyContact,
+        medicalNotes, classroomIds, address, emergencyContact,
         guardianInfo 
       } = req.body;
 
@@ -155,7 +179,14 @@ export class StudentController {
       if (gender) student.gender = gender;
       if (dateOfBirth) student.dateOfBirth = dateOfBirth;
       if (medicalNotes !== undefined) student.medicalNotes = medicalNotes;
-      if (classRoomId !== undefined) student.classRoomId = classRoomId;
+      
+      if (classroomIds !== undefined && Array.isArray(classroomIds)) {
+        const classRoomRepo = queryRunner.manager.getRepository(ClassRoom);
+        student.classRooms = await classRoomRepo.find({
+          where: { id: In(classroomIds) }
+        });
+      }
+
       if (address) student.address = address;
       if (emergencyContact) student.emergencyContact = emergencyContact;
       await queryRunner.manager.save(student);

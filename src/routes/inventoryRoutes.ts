@@ -11,10 +11,12 @@ router.use(authenticate, authorize("admin"));
 router.get("/stocks", InventoryController.getStocks);
 router.post("/stocks", InventoryController.addStockItem);
 router.put("/stocks/:id", InventoryController.updateStockItem);
+router.delete("/stocks/:id", InventoryController.deleteStockItem);
 
 // Asset operations
 router.get("/assets", InventoryController.getAssets);
 router.post("/assets", InventoryController.addAsset);
 router.put("/assets/:id", InventoryController.updateAsset);
+router.delete("/assets/:id", InventoryController.deleteAsset);
 
 export default router;

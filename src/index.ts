@@ -7,7 +7,7 @@ import { AppDataSource } from "./config/data-source";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
-import { sanitizeUserData } from "./middleware/authMiddleware";
+import { sanitizeUserData, authenticate, authorize } from "./middleware/authMiddleware";
 import { sanitizeInput } from "./middleware/inputSanitizer";
 import { apiRateLimiter } from "./middleware/rateLimiter";
 import { handleSessionExpiration } from "./middleware/sessionMiddleware";
@@ -18,7 +18,7 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
-const app: Application = express();
+const app: Application = express(); // Refreshing routes
 app.set("trust proxy", 1);
 
 // 1. CORS MUST BE FIRST to ensure every response has the correct headers
@@ -29,7 +29,7 @@ app.use(cors({
       "http://localhost:3000",
       "https://kindercloud-frontend.vercel.app"
     ].filter(Boolean) as string[];
-    
+
     if (!origin || allowed.includes(origin)) {
       callback(null, true);
     } else {
@@ -48,36 +48,34 @@ app.use(express.urlencoded({ limit: "500mb", extended: true }));
 let dbMigrated = false;
 let isInitializing = false;
 app.use(async (req: Request, res: Response, next) => {
-  // CRITICAL: Preflight requests (OPTIONS) MUST skip the database connection
-  // Otherwise, the browser hangs forever while the database tries to wake up.
   if (req.method === "OPTIONS") {
     return next();
   }
 
   if (!AppDataSource.isInitialized) {
     if (isInitializing) {
-        while (isInitializing) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            if (AppDataSource.isInitialized) break;
-        }
+      while (isInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (AppDataSource.isInitialized) break;
+      }
     }
 
     if (!AppDataSource.isInitialized) {
-        isInitializing = true;
-        try {
-          console.log("... Middleware connecting to database ...");
-          await AppDataSource.initialize();
-          console.log("✓ Middleware database connection successful");
-        } catch (error: any) {
-          console.error("✗ Middleware database connection failed:", error);
-          isInitializing = false;
-          return res.status(500).json({ 
-            error: "Database connection failed", 
-            message: error?.message || "Unknown error during initialization"
-          });
-        } finally {
-          isInitializing = false;
-        }
+      isInitializing = true;
+      try {
+        console.log("... Middleware connecting to database ...");
+        await AppDataSource.initialize();
+        console.log("✓ Middleware database connection successful");
+      } catch (error: any) {
+        console.error("✗ Middleware database connection failed:", error);
+        isInitializing = false;
+        return res.status(500).json({
+          error: "Database connection failed",
+          message: error?.message || "Unknown error during initialization"
+        });
+      } finally {
+        isInitializing = false;
+      }
     }
   }
 
@@ -100,7 +98,6 @@ app.use(async (req: Request, res: Response, next) => {
 
 import { getSessionStore } from "./config/session-store";
 
-// Session configuration
 const isProd = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
 
 const sessionMiddleware = session({
@@ -125,8 +122,6 @@ app.use((req: Request, res: Response, next) => {
   return sessionMiddleware(req, res, (err) => {
     if (err) {
       console.error("[Session Error]", err);
-    } else {
-      console.log(`[Session] Path: ${req.path}, ID: ${req.sessionID}, UserID: ${req.session?.userId || 'None'}`);
     }
     next(err);
   });
@@ -138,25 +133,11 @@ app.use(handleSessionExpiration);
 app.use("/api", apiRateLimiter);
 
 const isVercel = !!process.env.VERCEL;
-const uploadDir = isVercel 
-  ? "/tmp/uploads" 
+const uploadDir = isVercel
+  ? "/tmp/uploads"
   : (process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
 app.use("/uploads", express.static(uploadDir));
 app.use(sanitizeUserData);
-
-app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "LMS Backend API is running" });
-});
-
-app.get("/health", (req: Request, res: Response) => {
-  res.json({ 
-    status: "OK", 
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    vercel: !!process.env.VERCEL,
-    secureCookie: (process.env.NODE_ENV === "production" || !!process.env.VERCEL)
-  });
-});
 
 import classRoomRoutes from "./routes/classRoomRoutes";
 import lessonRoutes from "./routes/lessonRoutes";
@@ -187,15 +168,18 @@ app.use("/api/parents", parentRoutes);
 app.use("/api/kids", kidRoutes);
 app.use("/api", userRoutes);
 
+app.use((req: Request, res: Response) => {
+  console.warn(`[404] No route matched: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: "Route not found",
+    message: `The requested resource ${req.method} ${req.originalUrl} was not found on this server.`
+  });
+});
+
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Global error:", err);
-  if (err instanceof Error) {
-    if (err.message.includes("Invalid file type")) return res.status(400).json({ error: err.message });
-    if (err.message.includes("File too large")) return res.status(413).json({ error: "File too large. Max size is 500MB." });
-  }
-  if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "File too large. Max size is 500MB." });
-  res.status(500).json({ 
-    error: "Internal Server Error", 
+  res.status(500).json({
+    error: "Internal Server Error",
     message: err.message || "An unexpected error occurred"
   });
 });
@@ -203,7 +187,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`✓ Server is running on port ${PORT}`);
-    console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
     AppDataSource.initialize()
       .then(() => {
         console.log("✓ Database ready");

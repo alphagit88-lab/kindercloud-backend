@@ -17,7 +17,7 @@ export class KinderWork {
   @Column({ name: "kid_id", type: "uuid" })
   kidId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "kid_id" })
   kid!: User;
 
