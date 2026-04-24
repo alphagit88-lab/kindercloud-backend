@@ -168,6 +168,16 @@ app.use("/api/parents", parentRoutes);
 app.use("/api/kids", kidRoutes);
 app.use("/api", userRoutes);
 
+// Root route
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    message: "Welcome to KinderCloud API",
+    status: "online",
+    version: "1.0.0",
+    database: AppDataSource.isInitialized ? "connected" : "connecting"
+  });
+});
+
 app.use((req: Request, res: Response) => {
   console.warn(`[404] No route matched: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
