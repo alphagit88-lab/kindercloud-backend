@@ -125,7 +125,7 @@ export class ClassRoomController {
       // Manual cleanup of junction table because TypeORM/DB constraints are failing to cascade
       console.log(`[ClassRoomController] Manually cleaning up student_classrooms links for classroom: ${id}`);
       await AppDataSource.query(`
-        DELETE FROM student_classrooms WHERE classroom_id = $1
+        DELETE FROM student_classrooms WHERE "classRoomsId" = $1
       `, [id]);
 
       await repo.remove(classRoom);
