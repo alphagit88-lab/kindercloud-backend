@@ -9,6 +9,7 @@ router.get("/:classRoomId", authenticate, TimeTableController.getByClass);
 
 // Admin only management
 router.post("/", authenticate, authorize("admin"), TimeTableController.addEntry);
+router.put("/:id", authenticate, authorize("admin"), TimeTableController.updateEntry);
 router.delete("/:id", authenticate, authorize("admin"), TimeTableController.deleteEntry);
 
 export default router;

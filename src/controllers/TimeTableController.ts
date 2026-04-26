@@ -21,7 +21,7 @@ export class TimeTableController {
 
   static async addEntry(req: Request, res: Response) {
     try {
-      const { classRoomId, dayOfWeek, startTime, endTime, activity, location } = req.body;
+      const { classRoomId, teacherId, dayOfWeek, startTime, endTime, activity, location } = req.body;
       
       if (!classRoomId || !dayOfWeek || !startTime || !endTime || !activity) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -30,6 +30,7 @@ export class TimeTableController {
       const repo = AppDataSource.getRepository(TimeTable);
       const entry = repo.create({
         classRoomId,
+        teacherId,
         dayOfWeek,
         startTime,
         endTime,
@@ -60,6 +61,33 @@ export class TimeTableController {
     } catch (error) {
       console.error("Delete timetable entry error:", error);
       res.status(500).json({ error: "Failed to delete entry" });
+    }
+  }
+
+  static async updateEntry(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { dayOfWeek, startTime, endTime, activity, location, teacherId } = req.body;
+      
+      const repo = AppDataSource.getRepository(TimeTable);
+      const entry = await repo.findOne({ where: { id: id as string } });
+
+      if (!entry) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+
+      if (dayOfWeek) entry.dayOfWeek = dayOfWeek;
+      if (startTime) entry.startTime = startTime;
+      if (endTime) entry.endTime = endTime;
+      if (activity) entry.activity = activity;
+      if (location !== undefined) entry.location = location;
+      if (teacherId !== undefined) entry.teacherId = teacherId;
+
+      await repo.save(entry);
+      res.json({ message: "Timetable entry updated", entry });
+    } catch (error) {
+      console.error("Update timetable entry error:", error);
+      res.status(500).json({ error: "Failed to update entry" });
     }
   }
 }
