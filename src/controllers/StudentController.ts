@@ -19,7 +19,7 @@ export class StudentController {
       let students;
       try {
         students = await studentRepo.find({
-          relations: ["user", "classRooms"],
+          relations: ["user", "user.guardianLinksAsKid", "user.guardianLinksAsKid.parent", "classRooms"],
           order: { createdAt: "DESC" }
         });
       } catch (findError: any) {
@@ -164,7 +164,10 @@ export class StudentController {
         return res.status(404).json({ error: "Student not found" });
       }
 
-      const student = await studentRepo.findOne({ where: { userId: id as string } });
+      const student = await studentRepo.findOne({ 
+        where: { userId: id as string },
+        relations: ["classRooms"] 
+      });
       if (!student) {
         return res.status(404).json({ error: "Student profile not found" });
       }
