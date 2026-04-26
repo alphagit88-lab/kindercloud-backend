@@ -22,12 +22,12 @@ export class TimeTable {
   @JoinColumn({ name: "classroom_id" })
   classRoom!: ClassRoom;
 
-  @Column({ name: "teacher_id", type: "uuid" })
-  teacherId!: string;
+  @Column({ name: "teacher_id", type: "uuid", nullable: true })
+  teacherId?: string;
 
-  @ManyToOne(() => User, { onDelete: "CASCADE" })
+  @ManyToOne(() => User, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "teacher_id" })
-  teacher!: User;
+  teacher?: User;
 
   @Column({ length: 50 })
   dayOfWeek!: string;
