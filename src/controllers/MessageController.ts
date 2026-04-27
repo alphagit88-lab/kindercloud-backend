@@ -3,6 +3,7 @@ import { AppDataSource } from "../config/data-source";
 import { Message } from "../entities/Message";
 import { User } from "../entities/User";
 import { In } from "typeorm";
+import { SocketService } from "../services/SocketService";
 
 export class MessageController {
   
@@ -27,6 +28,17 @@ export class MessageController {
       });
 
       await repo.save(message);
+
+      // Fetch the full message with sender info for real-time update
+      const fullMessage = await repo.findOne({
+        where: { id: message.id },
+        relations: ["sender", "receiver"]
+      });
+
+      if (fullMessage) {
+        SocketService.emitToUser(receiverId, "new_message", fullMessage);
+      }
+
       res.status(201).json(message);
     } catch (error) {
       console.error("Send message error:", error);
@@ -101,22 +113,29 @@ export class MessageController {
    */
   static async getRecipients(req: Request, res: Response) {
     try {
-      const { role } = req.query; // admin, parent, student (mapped to kid)
+      const { role } = req.query;
+      const currentUserId = req.session.userId;
       
       let targetRole = role as string;
       if (targetRole === "student") targetRole = "kid";
 
       const userRepo = AppDataSource.getRepository(User);
+      
+      const where: any = { isActive: true };
+      if (targetRole) {
+        where.role = targetRole;
+      }
+
       const users = await userRepo.find({
-        where: { 
-          role: targetRole || In(["admin", "parent", "kid"]),
-          isActive: true
-        },
+        where,
         select: ["id", "firstName", "lastName", "role", "profilePicture"],
         order: { firstName: "ASC" }
       });
 
-      res.json(users);
+      // Filter out the current user from recipients
+      const filteredUsers = users.filter(u => u.id !== currentUserId);
+
+      res.json(filteredUsers);
     } catch (error) {
       console.error("Get recipients error:", error);
       res.status(500).json({ error: "Failed to fetch recipients" });

@@ -194,9 +194,15 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
+import { createServer } from "http";
+import { SocketService } from "./services/SocketService";
+
+const httpServer = createServer(app);
+
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`✓ Server is running on port ${PORT}`);
+    SocketService.init(httpServer);
     AppDataSource.initialize()
       .then(() => {
         console.log("✓ Database ready");
@@ -207,4 +213,5 @@ if (!process.env.VERCEL) {
   });
 }
 
+export { httpServer };
 export default app;
